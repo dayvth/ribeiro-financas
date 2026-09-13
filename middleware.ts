@@ -11,9 +11,9 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static
      * - _next/image
-     * - favicon.ico, manifest, icons
      * - api routes (têm sua própria autenticação)
+     * - static assets: favicon, manifest, .png/.svg/.ico
      */
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|manifest.webmanifest|apple-touch-icon.png|api/).*)',
+    '/((?!_next/static|_next/image|api/|.*\\.(?:png|svg|ico|webmanifest|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,18 +1,19 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Building2, MoreHorizontal } from 'lucide-react';
-import type { Transaction, Period, CustomRange } from '@/lib/types';
+import { Building2, MoreHorizontal, Users, ChevronRight } from 'lucide-react';
+import type { Transaction, Period, CustomRange, PartnerInvestment } from '@/lib/types';
 import { GOLD, GREEN, RED, CATEGORIES } from '@/lib/constants';
 import { filterByPeriod, fmtBRLBig } from '@/lib/format';
 import Monogram from './Monogram';
 import CustomDateModal from './CustomDateModal';
 
 export default function Dashboard({
-  transactions, period, setPeriod, custom, setCustom,
-  customOpen, setCustomOpen, onMenu,
+  transactions, partnerInvestments, period, setPeriod, custom, setCustom,
+  customOpen, setCustomOpen, onMenu, onGoPartners,
 }: {
   transactions: Transaction[];
+  partnerInvestments: PartnerInvestment[];
   period: Period;
   setPeriod: (p: Period) => void;
   custom: CustomRange;
@@ -20,6 +21,7 @@ export default function Dashboard({
   customOpen: boolean;
   setCustomOpen: (b: boolean) => void;
   onMenu: () => void;
+  onGoPartners: () => void;
 }) {
   const filtered = useMemo(
     () => filterByPeriod(transactions, period, custom),
@@ -34,6 +36,16 @@ export default function Dashboard({
     const investment = sum('investment');
     return { income, expense, result: income - expense, investment };
   }, [filtered]);
+
+  const partnerTotals = useMemo(() => {
+    let dayvth = 0, dieinison = 0;
+    for (const i of partnerInvestments) {
+      if (i.partner === 'dayvth') dayvth += Number(i.amount);
+      else if (i.partner === 'dieinison') dieinison += Number(i.amount);
+    }
+    const total = dayvth + dieinison;
+    return { dayvth, dieinison, total };
+  }, [partnerInvestments]);
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -128,6 +140,39 @@ export default function Dashboard({
         </div>
       </div>
 
+      {/* Investimento dos sócios */}
+      {partnerTotals.total > 0 && (
+        <div className="mt-3 px-6">
+          <button
+            onClick={onGoPartners}
+            className="w-full bg-white/[0.04] rounded-2xl p-5 flex items-center active:bg-white/[0.06] transition"
+          >
+            <div className="flex-1 text-left min-w-0">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center"
+                  style={{ background: 'rgba(201,165,95,0.15)' }}
+                >
+                  <Users size={14} style={{ color: GOLD }} />
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+                  Investimento dos sócios
+                </div>
+              </div>
+              <div className="mt-3 text-[22px] font-semibold tracking-tight tabular-nums text-white leading-none">
+                {fmtBRLBig(partnerTotals.total)}
+              </div>
+              <div className="text-[12px] text-white/50 mt-2 tabular-nums">
+                Dayvth <span className="text-white/80">{pctLabel(partnerTotals.dayvth, partnerTotals.total)}</span>
+                {' · '}
+                Dieinison <span className="text-white/80">{pctLabel(partnerTotals.dieinison, partnerTotals.total)}</span>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-white/30 ml-3 shrink-0" />
+          </button>
+        </div>
+      )}
+
       {/* Despesas por categoria */}
       {byCategory.length > 0 && (
         <div className="mt-10 px-6">
@@ -178,6 +223,12 @@ export default function Dashboard({
       )}
     </div>
   );
+}
+
+function pctLabel(part: number, total: number): string {
+  if (total <= 0) return '0%';
+  const v = (part / total) * 100;
+  return `${v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 === 0 ? 0 : 1, maximumFractionDigits: 1 })}%`;
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {

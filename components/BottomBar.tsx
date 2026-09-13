@@ -1,9 +1,9 @@
 'use client';
 
-import { Plus, House, Receipt } from 'lucide-react';
+import { Plus, House, Receipt, Users } from 'lucide-react';
 import { GOLD_SOFT, GOLD_DEEP } from '@/lib/constants';
 
-type Tab = 'dashboard' | 'transactions';
+type Tab = 'dashboard' | 'transactions' | 'partners';
 
 export default function BottomBar({
   tab, setTab, onAdd,
@@ -17,33 +17,38 @@ export default function BottomBar({
       <button
         onClick={onAdd}
         aria-label="Adicionar"
-        className="fixed bottom-7 left-1/2 -translate-x-1/2 z-40 w-[62px] h-[62px] rounded-full flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-24 right-6 z-40 w-[58px] h-[58px] rounded-full flex items-center justify-center active:scale-95 transition-transform"
         style={{
           background: `linear-gradient(135deg, ${GOLD_SOFT} 0%, ${GOLD_DEEP} 100%)`,
-          boxShadow: '0 12px 32px rgba(201,165,95,0.35), 0 2px 6px rgba(0,0,0,0.4)',
+          boxShadow: '0 10px 28px rgba(201,165,95,0.35), 0 2px 6px rgba(0,0,0,0.4)',
           marginBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <Plus size={28} className="text-black" strokeWidth={2.6} />
+        <Plus size={26} className="text-black" strokeWidth={2.6} />
       </button>
 
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 pointer-events-none pb-safe">
         <div
-          className="mx-4 mb-4 bg-white/[0.04] border border-white/[0.06] rounded-2xl h-[62px] flex items-center px-2 pointer-events-auto"
+          className="mx-4 mb-4 bg-white/[0.04] border border-white/[0.06] rounded-2xl h-[62px] flex items-center pointer-events-auto"
           style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
         >
           <TabButton
-            icon={<House size={22} />}
+            icon={<House size={20} />}
             label="Início"
             active={tab === 'dashboard'}
             onClick={() => setTab('dashboard')}
           />
-          <div className="w-[62px] shrink-0" />
           <TabButton
-            icon={<Receipt size={22} />}
+            icon={<Receipt size={20} />}
             label="Movimentações"
             active={tab === 'transactions'}
             onClick={() => setTab('transactions')}
+          />
+          <TabButton
+            icon={<Users size={20} />}
+            label="Sócios"
+            active={tab === 'partners'}
+            onClick={() => setTab('partners')}
           />
         </div>
       </div>

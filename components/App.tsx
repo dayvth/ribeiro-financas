@@ -7,11 +7,14 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type {
   Transaction, Period, CustomRange, TransactionType, NewTransactionInput, AnalyzedReceipt,
+  PartnerInvestment, NewPartnerInvestmentInput, Partner,
 } from '@/lib/types';
 import { GOLD } from '@/lib/constants';
 import Dashboard from './Dashboard';
 import Transactions from './Transactions';
 import TransactionForm from './TransactionForm';
+import Partners from './Partners';
+import PartnerInvestmentForm from './PartnerInvestmentForm';
 import BottomBar from './BottomBar';
 import { Sheet, SheetOption } from './Sheet';
 
@@ -26,15 +29,19 @@ type FormState = {
   };
 } | null;
 
+type PartnerFormState = { partner: Partner; initial?: PartnerInvestment } | null;
+
 export default function App({ userEmail }: { userEmail: string }) {
   const supabase = createClient();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [tab, setTab] = useState<'dashboard' | 'transactions'>('dashboard');
+  const [partnerInvestments, setPartnerInvestments] = useState<PartnerInvestment[]>([]);
+  const [tab, setTab] = useState<'dashboard' | 'transactions' | 'partners'>('dashboard');
   const [addSheet, setAddSheet] = useState(false);
   const [expenseTypeSheet, setExpenseTypeSheet] = useState(false);
   const [menuSheet, setMenuSheet] = useState(false);
   const [form, setForm] = useState<FormState>(null);
+  const [partnerForm, setPartnerForm] = useState<PartnerFormState>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const [custom, setCustom] = useState<CustomRange>(() => {
@@ -60,20 +67,39 @@ export default function App({ userEmail }: { userEmail: string }) {
     if (data) setTransactions(data as Transaction[]);
   }, [supabase]);
 
+  const loadPartnerInvestments = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('partner_investments')
+      .select('*')
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('load partner_investments error', error);
+      return;
+    }
+    if (data) setPartnerInvestments(data as PartnerInvestment[]);
+  }, [supabase]);
+
   useEffect(() => {
     loadTransactions();
+    loadPartnerInvestments();
     const channel = supabase
-      .channel('transactions-changes')
+      .channel('ribeiro-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transactions' },
         () => { loadTransactions(); },
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'partner_investments' },
+        () => { loadPartnerInvestments(); },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadTransactions, supabase]);
+  }, [loadTransactions, loadPartnerInvestments, supabase]);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -84,7 +110,6 @@ export default function App({ userEmail }: { userEmail: string }) {
     setAnalyzing(true);
 
     try {
-      // 1) Upload da foto
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -94,7 +119,6 @@ export default function App({ userEmail }: { userEmail: string }) {
       const { data: pub } = supabase.storage.from('receipts').getPublicUrl(path);
       const receiptUrl = pub.publicUrl;
 
-      // 2) Analisa com Gemini
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch('/api/analyze-receipt', { method: 'POST', body: fd });
@@ -137,7 +161,6 @@ export default function App({ userEmail }: { userEmail: string }) {
       return;
     }
 
-    // Update otimista (o realtime também vai chamar loadTransactions)
     if (data) {
       setTransactions((prev) => {
         if (prev.some((t) => t.id === (data as Transaction).id)) return prev;
@@ -157,6 +180,62 @@ export default function App({ userEmail }: { userEmail: string }) {
     }
   }
 
+  async function handleSavePartnerInvestment(input: NewPartnerInvestmentInput) {
+    const editingId = partnerForm?.initial?.id;
+    if (editingId) {
+      const prev = partnerInvestments;
+      setPartnerInvestments((list) =>
+        list.map((i) => (i.id === editingId ? { ...i, ...input } as PartnerInvestment : i)),
+      );
+      const { error } = await supabase
+        .from('partner_investments')
+        .update({
+          partner: input.partner,
+          amount: input.amount,
+          description: input.description,
+          date: input.date,
+        })
+        .eq('id', editingId);
+      if (error) {
+        alert('Erro ao atualizar: ' + error.message);
+        setPartnerInvestments(prev);
+        return;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('partner_investments')
+        .insert({
+          partner: input.partner,
+          amount: input.amount,
+          description: input.description,
+          date: input.date,
+        })
+        .select()
+        .single();
+      if (error) {
+        alert('Erro ao salvar: ' + error.message);
+        return;
+      }
+      if (data) {
+        setPartnerInvestments((prev) => {
+          if (prev.some((i) => i.id === (data as PartnerInvestment).id)) return prev;
+          return [data as PartnerInvestment, ...prev];
+        });
+      }
+    }
+    setPartnerForm(null);
+  }
+
+  async function handleDeletePartnerInvestment(id: string) {
+    const prev = partnerInvestments;
+    setPartnerInvestments((p) => p.filter((i) => i.id !== id));
+    const { error } = await supabase.from('partner_investments').delete().eq('id', id);
+    if (error) {
+      alert('Erro ao excluir: ' + error.message);
+      setPartnerInvestments(prev);
+    }
+  }
+
   async function handleSignOut() {
     await fetch('/auth/signout', { method: 'POST' });
     window.location.href = '/login';
@@ -168,10 +247,12 @@ export default function App({ userEmail }: { userEmail: string }) {
         {tab === 'dashboard' && (
           <Dashboard
             transactions={transactions}
+            partnerInvestments={partnerInvestments}
             period={period} setPeriod={setPeriod}
             custom={custom} setCustom={setCustom}
             customOpen={customOpen} setCustomOpen={setCustomOpen}
             onMenu={() => setMenuSheet(true)}
+            onGoPartners={() => setTab('partners')}
           />
         )}
         {tab === 'transactions' && (
@@ -181,10 +262,18 @@ export default function App({ userEmail }: { userEmail: string }) {
             onMenu={() => setMenuSheet(true)}
           />
         )}
+        {tab === 'partners' && (
+          <Partners
+            investments={partnerInvestments}
+            onAdd={(p) => setPartnerForm({ partner: p })}
+            onEdit={(inv) => setPartnerForm({ partner: inv.partner, initial: inv })}
+            onDelete={handleDeletePartnerInvestment}
+            onMenu={() => setMenuSheet(true)}
+          />
+        )}
 
         <BottomBar tab={tab} setTab={setTab} onAdd={() => setAddSheet(true)} />
 
-        {/* Sheet: Adicionar */}
         <Sheet open={addSheet} onClose={() => setAddSheet(false)} title="Adicionar">
           <SheetOption
             iconEl={<ArrowDownRight size={22} />}
@@ -206,7 +295,6 @@ export default function App({ userEmail }: { userEmail: string }) {
           />
         </Sheet>
 
-        {/* Sheet: Tipo de despesa */}
         <Sheet
           open={expenseTypeSheet}
           onClose={() => setExpenseTypeSheet(false)}
@@ -235,7 +323,6 @@ export default function App({ userEmail }: { userEmail: string }) {
           />
         </Sheet>
 
-        {/* Sheet: Menu (perfil / sair) */}
         <Sheet open={menuSheet} onClose={() => setMenuSheet(false)} title="Conta">
           <div className="px-3 pt-1 pb-3">
             <div className="text-[13px] text-white/50">Conectado como</div>
@@ -249,7 +336,6 @@ export default function App({ userEmail }: { userEmail: string }) {
           />
         </Sheet>
 
-        {/* Loading da análise do recibo */}
         {analyzing && (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[70] flex flex-col items-center justify-center gap-5 anim-fade">
             <Loader2 size={38} className="animate-spin" style={{ color: GOLD }} />
@@ -262,13 +348,21 @@ export default function App({ userEmail }: { userEmail: string }) {
           </div>
         )}
 
-        {/* Formulário */}
         {form && (
           <TransactionForm
             type={form.type}
             prefill={form.prefill}
             onCancel={() => setForm(null)}
             onSave={handleSave}
+          />
+        )}
+
+        {partnerForm && (
+          <PartnerInvestmentForm
+            partner={partnerForm.partner}
+            initial={partnerForm.initial}
+            onCancel={() => setPartnerForm(null)}
+            onSave={handleSavePartnerInvestment}
           />
         )}
       </div>

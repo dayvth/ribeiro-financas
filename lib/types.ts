@@ -31,3 +31,27 @@ export type AnalyzedReceipt = {
   date: string | null;
   category: string | null;
 };
+
+export type Partner = 'dayvth' | 'dieinison';
+
+export type PartnerInvestment = {
+  id: string;
+  partner: Partner;
+  amount: number;
+  description: string;
+  date: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NewPartnerInvestmentInput = {
+  partner: Partner;
+  amount: number;
+  description: string;
+  date: string;
+};
+
+export const PARTNERS: { id: Partner; name: string }[] = [
+  { id: 'dayvth', name: 'Dayvth' },
+  { id: 'dieinison', name: 'Dieinison' },
+];
