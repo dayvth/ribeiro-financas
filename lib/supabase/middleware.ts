@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { ALLOWED_EMAILS } from '@/lib/constants';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -27,11 +28,23 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redireciona rotas protegidas para /login se não autenticado
   const url = request.nextUrl;
   const isPublic =
     url.pathname.startsWith('/login') ||
     url.pathname.startsWith('/auth');
+
+  if (user) {
+    const email = user.email?.toLowerCase() ?? null;
+    if (!email || !ALLOWED_EMAILS.includes(email)) {
+      await supabase.auth.signOut();
+      if (!isPublic) {
+        const loginUrl = url.clone();
+        loginUrl.pathname = '/login';
+        loginUrl.searchParams.set('error', 'unauthorized');
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+  }
 
   if (!user && !isPublic) {
     const loginUrl = url.clone();
