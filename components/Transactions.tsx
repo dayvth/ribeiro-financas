@@ -32,16 +32,18 @@ export default function Transactions({
 
   return (
     <div className="pb-40 overflow-y-auto max-h-screen">
-      <div className="pt-safe px-6 flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-            Ribeiro Mineração
+      <div className="pt-safe">
+        <div className="pt-6 px-6 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+              Ribeiro Mineração
+            </div>
+            <h1 className="text-[30px] font-semibold tracking-tight mt-1 leading-none">
+              Movimentações
+            </h1>
           </div>
-          <h1 className="text-[28px] font-semibold tracking-tight mt-1 leading-none">
-            Movimentações
-          </h1>
+          <Monogram onClick={onMenu} />
         </div>
-        <Monogram onClick={onMenu} />
       </div>
 
       {sorted.length === 0 ? (

@@ -53,7 +53,7 @@ export type NewPartnerInvestmentInput = {
   receipt_url: string | null;
 };
 
-export const PARTNERS: { id: Partner; name: string }[] = [
-  { id: 'dayvth', name: 'Dayvth' },
-  { id: 'dieinison', name: 'Dieinison' },
+export const PARTNERS: { id: Partner; name: string; photo: string }[] = [
+  { id: 'dayvth', name: 'Dayvth', photo: '/partners/dayvth.jpg' },
+  { id: 'dieinison', name: 'Dieinison', photo: '/partners/dieinison.jpg' },
 ];

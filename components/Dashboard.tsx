@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { Building2, MoreHorizontal, Users, ChevronRight } from 'lucide-react';
 import type { Transaction, Period, CustomRange, PartnerInvestment } from '@/lib/types';
+import { PARTNERS } from '@/lib/types';
 import { GOLD, GREEN, RED, CATEGORIES } from '@/lib/constants';
 import { filterByPeriod, fmtBRLBig } from '@/lib/format';
 import Monogram from './Monogram';
@@ -60,18 +61,20 @@ export default function Dashboard({
 
   return (
     <div className="pb-40 overflow-y-auto max-h-screen">
-      <div className="pt-safe px-6 flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-            Ribeiro Mineração
+      <div className="pt-safe">
+        <div className="pt-6 px-6 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+              Ribeiro Mineração
+            </div>
+            <h1 className="text-[30px] font-semibold tracking-tight mt-1 leading-none">Início</h1>
           </div>
-          <h1 className="text-[28px] font-semibold tracking-tight mt-1 leading-none">Início</h1>
+          <Monogram onClick={onMenu} />
         </div>
-        <Monogram onClick={onMenu} />
       </div>
 
       {/* Período */}
-      <div className="mt-7 px-6">
+      <div className="mt-8 px-6">
         <div className="bg-white/[0.06] rounded-xl p-1 flex text-[12px] font-medium">
           {[
             { id: 'week' as const, label: 'Semana' },
@@ -96,23 +99,23 @@ export default function Dashboard({
       </div>
 
       {/* Resultado */}
-      <div className="mt-10 px-6">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+      <div className="mt-12 px-6">
+        <div className="text-[10px] uppercase tracking-[0.25em] text-white/40 font-semibold">
           Resultado
         </div>
         <div
-          className="mt-3 text-[46px] font-semibold tracking-tight leading-none tabular-nums"
+          className="mt-3.5 text-[48px] font-semibold tracking-tight leading-none tabular-nums"
           style={{ color: resultPositive ? '#fff' : RED }}
         >
           {fmtBRLBig(totals.result)}
         </div>
-        <div className="text-[13px] text-white/40 mt-2.5">
+        <div className="text-[13px] text-white/40 mt-3">
           Receitas menos despesas no período
         </div>
       </div>
 
       {/* Lucro + Despesas */}
-      <div className="mt-8 px-6 grid grid-cols-2 gap-3">
+      <div className="mt-10 px-6 grid grid-cols-2 gap-3">
         <StatCard label="Lucro bruto" value={totals.income} color={GREEN} />
         <StatCard label="Despesas" value={totals.expense} color={RED} />
       </div>
@@ -145,9 +148,9 @@ export default function Dashboard({
         <div className="mt-3 px-6">
           <button
             onClick={onGoPartners}
-            className="w-full bg-white/[0.04] rounded-2xl p-5 flex items-center active:bg-white/[0.06] transition"
+            className="w-full bg-white/[0.04] rounded-2xl p-5 flex items-center active:bg-white/[0.06] transition text-left"
           >
-            <div className="flex-1 text-left min-w-0">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-6 h-6 rounded-md flex items-center justify-center"
@@ -162,10 +165,21 @@ export default function Dashboard({
               <div className="mt-3 text-[22px] font-semibold tracking-tight tabular-nums text-white leading-none">
                 {fmtBRLBig(partnerTotals.total)}
               </div>
-              <div className="text-[12px] text-white/50 mt-2 tabular-nums">
-                Dayvth <span className="text-white/80">{pctLabel(partnerTotals.dayvth, partnerTotals.total)}</span>
-                {' · '}
-                Dieinison <span className="text-white/80">{pctLabel(partnerTotals.dieinison, partnerTotals.total)}</span>
+              <div className="mt-3 flex items-center gap-2.5">
+                {PARTNERS.map((p) => {
+                  const value = p.id === 'dayvth' ? partnerTotals.dayvth : partnerTotals.dieinison;
+                  return (
+                    <div key={p.id} className="flex items-center gap-1.5">
+                      <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-white/10 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[12px] text-white/85 tabular-nums">
+                        {pctLabel(value, partnerTotals.total)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <ChevronRight size={18} className="text-white/30 ml-3 shrink-0" />

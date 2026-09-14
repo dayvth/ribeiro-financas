@@ -28,34 +28,49 @@ export default function Partners({
   }, [investments]);
 
   const grandTotal = totals.dayvth + totals.dieinison;
-
-  const pct = (p: Partner) =>
-    grandTotal > 0 ? (totals[p] / grandTotal) * 100 : 0;
+  const pct = (p: Partner) => (grandTotal > 0 ? (totals[p] / grandTotal) * 100 : 0);
 
   return (
     <div className="pb-40 overflow-y-auto max-h-screen">
-      <div className="pt-safe px-6 flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-            Ribeiro Mineração
+      <div className="pt-safe">
+        <div className="pt-6 px-6 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+              Ribeiro Mineração
+            </div>
+            <h1 className="text-[30px] font-semibold tracking-tight mt-1 leading-none">Sócios</h1>
           </div>
-          <h1 className="text-[28px] font-semibold tracking-tight mt-1 leading-none">Sócios</h1>
+          <Monogram onClick={onMenu} />
         </div>
-        <Monogram onClick={onMenu} />
       </div>
 
-      {/* Resumo */}
-      <div className="mt-8 px-6">
-        <div className="bg-white/[0.04] rounded-2xl p-5">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-            Investimento total
-          </div>
-          <div className="mt-3 text-[34px] font-semibold tracking-tight tabular-nums text-white leading-none">
-            {fmtBRLBig(grandTotal)}
-          </div>
+      {/* Investimento total centralizado */}
+      <div className="mt-10 px-6 text-center">
+        <div className="text-[10px] uppercase tracking-[0.25em] text-white/40 font-semibold">
+          Investimento total
+        </div>
+        <div className="mt-3 text-[42px] font-semibold tracking-tight tabular-nums text-white leading-none">
+          {fmtBRLBig(grandTotal)}
+        </div>
+      </div>
 
-          {/* Barra */}
-          <div className="mt-5 h-2 rounded-full overflow-hidden bg-white/[0.06] flex">
+      {/* Avatares + participação (estilo criativo) */}
+      <div className="mt-10 px-6">
+        <div className="grid grid-cols-2 gap-3">
+          {PARTNERS.map((p) => (
+            <PartnerAvatarCard
+              key={p.id}
+              photo={p.photo}
+              name={p.name}
+              amount={totals[p.id]}
+              percentage={pct(p.id)}
+            />
+          ))}
+        </div>
+
+        {/* Barra comparativa */}
+        <div className="mt-5">
+          <div className="h-1.5 rounded-full overflow-hidden bg-white/[0.06] flex">
             <div
               className="h-full transition-all"
               style={{
@@ -68,36 +83,18 @@ export default function Partners({
               style={{ width: `${pct('dieinison')}%` }}
             />
           </div>
-
-          <div className="mt-3 flex items-center justify-between text-[12px]">
-            <div className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ background: GOLD }}
-              />
-              <span className="text-white/70">
-                Dayvth <span className="text-white/90 font-medium tabular-nums">{fmtPct(pct('dayvth'))}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-white/40" />
-              <span className="text-white/70">
-                Dieinison <span className="text-white/90 font-medium tabular-nums">{fmtPct(pct('dieinison'))}</span>
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Blocos por sócio */}
-      <div className="mt-6 px-6 space-y-6">
+      {/* Blocos individuais com histórico */}
+      <div className="mt-10 px-6 space-y-6">
         {PARTNERS.map((p) => (
-          <PartnerCard
+          <PartnerHistoryCard
             key={p.id}
             partner={p.id}
             name={p.name}
+            photo={p.photo}
             total={totals[p.id]}
-            participation={pct(p.id)}
             investments={investments.filter((i) => i.partner === p.id)}
             onAdd={() => onAdd(p.id)}
             onEdit={onEdit}
@@ -109,13 +106,91 @@ export default function Partners({
   );
 }
 
-function PartnerCard({
-  partner, name, total, participation, investments, onAdd, onEdit, onDelete,
+function PartnerAvatarCard({
+  photo, name, amount, percentage,
+}: {
+  photo: string;
+  name: string;
+  amount: number;
+  percentage: number;
+}) {
+  const size = 108;
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const displayPct = Math.max(0, Math.min(100, percentage));
+  const dash = (displayPct / 100) * circumference;
+
+  return (
+    <div className="bg-white/[0.04] rounded-2xl px-3 pt-5 pb-4 flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="absolute inset-0 -rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={stroke}
+            fill="none"
+          />
+          <defs>
+            <linearGradient id={`ring-${name}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={GOLD_SOFT} />
+              <stop offset="100%" stopColor={GOLD_DEEP} />
+            </linearGradient>
+          </defs>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={`url(#ring-${name})`}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={`${dash} ${circumference - dash}`}
+            style={{ transition: 'stroke-dasharray 400ms ease' }}
+          />
+        </svg>
+        <div
+          className="absolute rounded-full overflow-hidden"
+          style={{
+            top: stroke + 4,
+            left: stroke + 4,
+            width: size - (stroke + 4) * 2,
+            height: size - (stroke + 4) * 2,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo} alt={name} className="w-full h-full object-cover" />
+        </div>
+      </div>
+
+      <div className="mt-3 text-[15px] font-semibold text-white">{name}</div>
+      <div
+        className="mt-1 text-[22px] font-semibold tracking-tight tabular-nums leading-none"
+        style={{
+          background: `linear-gradient(135deg, ${GOLD_SOFT}, ${GOLD_DEEP})`,
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+        }}
+      >
+        {fmtPct(percentage)}
+      </div>
+      <div className="mt-1 text-[11px] text-white/45 tabular-nums">
+        {fmtBRLBig(amount)}
+      </div>
+    </div>
+  );
+}
+
+function PartnerHistoryCard({
+  partner, name, photo, total, investments, onAdd, onEdit, onDelete,
 }: {
   partner: Partner;
   name: string;
+  photo: string;
   total: number;
-  participation: number;
   investments: PartnerInvestment[];
   onAdd: () => void;
   onEdit: (inv: PartnerInvestment) => void;
@@ -129,21 +204,24 @@ function PartnerCard({
   return (
     <div className="bg-white/[0.04] rounded-2xl overflow-hidden">
       <div className="px-5 pt-5 pb-4">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-          {name}
-        </div>
-        <div className="mt-2 flex items-baseline gap-3">
-          <div className="text-[28px] font-semibold tracking-tight tabular-nums text-white leading-none">
-            {fmtBRLBig(total)}
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 ring-1 ring-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo} alt={name} className="w-full h-full object-cover" />
           </div>
-          <div className="text-[13px] text-white/40 tabular-nums">
-            {fmtPct(participation)}
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+              {name}
+            </div>
+            <div className="text-[24px] font-semibold tracking-tight tabular-nums text-white leading-none mt-1">
+              {fmtBRLBig(total)}
+            </div>
           </div>
         </div>
 
         <button
           onClick={onAdd}
-          className="mt-4 w-full py-3 rounded-xl text-[14px] font-semibold text-black transition active:scale-[0.98] flex items-center justify-center gap-2"
+          className="mt-5 w-full py-3 rounded-xl text-[14px] font-semibold text-black transition active:scale-[0.98] flex items-center justify-center gap-2"
           style={{ background: `linear-gradient(135deg, ${GOLD_SOFT} 0%, ${GOLD_DEEP} 100%)` }}
         >
           <Plus size={16} strokeWidth={2.5} />
