@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { ALLOWED_EMAILS } from '@/lib/constants';
+import { isEmailAllowed } from '@/lib/allowlist';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,9 +18,9 @@ export async function GET(request: Request) {
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  const email = user?.email?.toLowerCase() ?? null;
+  const allowed = await isEmailAllowed(supabase, user?.email);
 
-  if (!email || !ALLOWED_EMAILS.includes(email)) {
+  if (!allowed) {
     await supabase.auth.signOut();
     return NextResponse.redirect(`${origin}/login?error=unauthorized`);
   }

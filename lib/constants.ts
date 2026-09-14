@@ -9,10 +9,7 @@ export const GOLD_DEEP = '#a67d3b';
 export const GREEN = '#34c47a';
 export const RED = '#ff453a';
 
-export const ALLOWED_EMAILS = [
-  'dayvtholiveira@gmail.com',
-  'dieinison2015@gmail.com',
-];
+// Whitelist agora vive em public.allowed_users no Supabase; ver lib/allowlist.ts
 
 export type Category = { id: string; name: string; icon: LucideIcon };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus, Trash2, Pencil, Paperclip } from 'lucide-react';
 import type { Partner, PartnerInvestment } from '@/lib/types';
 import { PARTNERS } from '@/lib/types';
@@ -10,22 +10,48 @@ import Monogram from './Monogram';
 
 type Totals = Record<Partner, number>;
 
+type PartnerPeriod = 'all' | 'month' | 'year';
+
+const PERIODS: { id: PartnerPeriod; label: string }[] = [
+  { id: 'all', label: 'Total' },
+  { id: 'year', label: 'Ano' },
+  { id: 'month', label: 'Mês' },
+];
+
+function inPeriod(dateISO: string, period: PartnerPeriod): boolean {
+  if (period === 'all') return true;
+  const d = new Date(dateISO + 'T12:00:00');
+  const now = new Date();
+  if (period === 'year') return d.getFullYear() === now.getFullYear();
+  if (period === 'month') {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+  return true;
+}
+
 export default function Partners({
   investments, onAdd, onEdit, onDelete, onMenu,
 }: {
   investments: PartnerInvestment[];
   onAdd: (partner: Partner) => void;
   onEdit: (inv: PartnerInvestment) => void;
-  onDelete: (id: string) => void;
+  onDelete: (inv: PartnerInvestment) => void;
   onMenu: () => void;
 }) {
+  const [period, setPeriod] = useState<PartnerPeriod>('all');
+
+  const filtered = useMemo(
+    () => investments.filter((i) => inPeriod(i.date, period)),
+    [investments, period],
+  );
+
   const totals: Totals = useMemo(() => {
     const t: Totals = { dayvth: 0, dieinison: 0 };
-    for (const inv of investments) {
+    for (const inv of filtered) {
       t[inv.partner] = (t[inv.partner] ?? 0) + Number(inv.amount);
     }
     return t;
-  }, [investments]);
+  }, [filtered]);
 
   const grandTotal = totals.dayvth + totals.dieinison;
   const pct = (p: Partner) => (grandTotal > 0 ? (totals[p] / grandTotal) * 100 : 0);
@@ -44,6 +70,23 @@ export default function Partners({
         </div>
       </div>
 
+      {/* Filtro de período */}
+      <div className="mt-8 px-6">
+        <div className="bg-white/[0.06] rounded-xl p-1 flex text-[12px] font-medium">
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={`flex-1 py-2 rounded-lg transition-all whitespace-nowrap ${
+                period === p.id ? 'bg-white text-black' : 'text-white/60'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Investimento total centralizado */}
       <div className="mt-10 px-6 text-center">
         <div className="text-[10px] uppercase tracking-[0.25em] text-white/40 font-semibold">
@@ -54,7 +97,7 @@ export default function Partners({
         </div>
       </div>
 
-      {/* Avatares + participação (estilo criativo) */}
+      {/* Avatares + participação (estilo Apple Fitness) */}
       <div className="mt-10 px-6">
         <div className="grid grid-cols-2 gap-3">
           {PARTNERS.map((p) => (
@@ -68,7 +111,6 @@ export default function Partners({
           ))}
         </div>
 
-        {/* Barra comparativa */}
         <div className="mt-5">
           <div className="h-1.5 rounded-full overflow-hidden bg-white/[0.06] flex">
             <div
@@ -95,7 +137,7 @@ export default function Partners({
             name={p.name}
             photo={p.photo}
             total={totals[p.id]}
-            investments={investments.filter((i) => i.partner === p.id)}
+            investments={filtered.filter((i) => i.partner === p.id)}
             onAdd={() => onAdd(p.id)}
             onEdit={onEdit}
             onDelete={onDelete}
@@ -194,7 +236,7 @@ function PartnerHistoryCard({
   investments: PartnerInvestment[];
   onAdd: () => void;
   onEdit: (inv: PartnerInvestment) => void;
-  onDelete: (id: string) => void;
+  onDelete: (inv: PartnerInvestment) => void;
 }) {
   const sorted = [...investments].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
@@ -261,9 +303,7 @@ function PartnerHistoryCard({
                 <Pencil size={15} className="text-white/50" />
               </button>
               <button
-                onClick={() => {
-                  if (confirm('Excluir este investimento?')) onDelete(inv.id);
-                }}
+                onClick={() => onDelete(inv)}
                 className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/10"
                 aria-label="Excluir"
               >

@@ -9,6 +9,8 @@ export type Transaction = {
   amount: number;
   date: string; // YYYY-MM-DD
   receipt_url: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -41,6 +43,9 @@ export type PartnerInvestment = {
   description: string;
   date: string;
   receipt_url: string | null;
+  user_id: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
   created_at: string;
   updated_at: string;
 };

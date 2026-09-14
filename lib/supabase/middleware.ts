@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { ALLOWED_EMAILS } from '@/lib/constants';
+import { isEmailAllowed } from '@/lib/allowlist';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -34,8 +34,8 @@ export async function updateSession(request: NextRequest) {
     url.pathname.startsWith('/auth');
 
   if (user) {
-    const email = user.email?.toLowerCase() ?? null;
-    if (!email || !ALLOWED_EMAILS.includes(email)) {
+    const allowed = await isEmailAllowed(supabase, user.email);
+    if (!allowed) {
       await supabase.auth.signOut();
       if (!isPublic) {
         const loginUrl = url.clone();

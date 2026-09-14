@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  ArrowDownRight, ArrowUpRight, Building2, Camera, PenLine, Loader2, LogOut,
+  ArrowDownRight, ArrowUpRight, Building2, Camera, PenLine, Loader2, LogOut, WifiOff,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type {
@@ -10,12 +10,15 @@ import type {
   PartnerInvestment, NewPartnerInvestmentInput, Partner,
 } from '@/lib/types';
 import { GOLD } from '@/lib/constants';
+import { useOnline } from '@/lib/useOnline';
 import Dashboard from './Dashboard';
 import Transactions from './Transactions';
 import TransactionForm from './TransactionForm';
 import Partners from './Partners';
 import PartnerInvestmentForm from './PartnerInvestmentForm';
 import BottomBar from './BottomBar';
+import ConfirmSheet from './ConfirmSheet';
+import Toast, { type ToastItem } from './Toast';
 import { Sheet, SheetOption } from './Sheet';
 
 type FormState = {
@@ -32,17 +35,51 @@ type FormState = {
 
 type PartnerFormState = { partner: Partner; initial?: PartnerInvestment } | null;
 
+type PendingDelete =
+  | { kind: 'transaction'; tx: Transaction }
+  | { kind: 'partner_investment'; inv: PartnerInvestment }
+  | null;
+
+const CACHE_TX = 'ribeiro:tx:v1';
+const CACHE_PI = 'ribeiro:pi:v1';
+
+function loadCache<T>(key: string): T[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCache<T>(key: string, data: T[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // storage cheio ou desabilitado — ignora
+  }
+}
+
 export default function App({ userEmail }: { userEmail: string }) {
   const supabase = createClient();
+  const online = useOnline();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [partnerInvestments, setPartnerInvestments] = useState<PartnerInvestment[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(() =>
+    loadCache<Transaction>(CACHE_TX),
+  );
+  const [partnerInvestments, setPartnerInvestments] = useState<PartnerInvestment[]>(() =>
+    loadCache<PartnerInvestment>(CACHE_PI),
+  );
   const [tab, setTab] = useState<'dashboard' | 'transactions' | 'partners'>('dashboard');
   const [addSheet, setAddSheet] = useState(false);
   const [expenseTypeSheet, setExpenseTypeSheet] = useState(false);
   const [menuSheet, setMenuSheet] = useState(false);
   const [form, setForm] = useState<FormState>(null);
   const [partnerForm, setPartnerForm] = useState<PartnerFormState>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+  const [toast, setToast] = useState<ToastItem | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const [custom, setCustom] = useState<CustomRange>(() => {
@@ -55,10 +92,18 @@ export default function App({ userEmail }: { userEmail: string }) {
   const [customOpen, setCustomOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    saveCache(CACHE_TX, transactions);
+  }, [transactions]);
+  useEffect(() => {
+    saveCache(CACHE_PI, partnerInvestments);
+  }, [partnerInvestments]);
+
   const loadTransactions = useCallback(async () => {
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
+      .is('deleted_at', null)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) {
@@ -72,6 +117,7 @@ export default function App({ userEmail }: { userEmail: string }) {
     const { data, error } = await supabase
       .from('partner_investments')
       .select('*')
+      .is('deleted_at', null)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) {
@@ -101,6 +147,11 @@ export default function App({ userEmail }: { userEmail: string }) {
       supabase.removeChannel(channel);
     };
   }, [loadTransactions, loadPartnerInvestments, supabase]);
+
+  function pushToast(item: Omit<ToastItem, 'id'> & { id?: string }) {
+    const id = item.id ?? `t-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setToast({ ...item, id });
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -211,13 +262,73 @@ export default function App({ userEmail }: { userEmail: string }) {
     });
   }
 
-  async function handleDelete(id: string) {
-    const prev = transactions;
-    setTransactions((p) => p.filter((t) => t.id !== id));
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
-    if (error) {
-      alert('Erro ao excluir: ' + error.message);
-      setTransactions(prev);
+  function requestDeleteTransaction(tx: Transaction) {
+    setPendingDelete({ kind: 'transaction', tx });
+  }
+
+  function requestDeletePartnerInvestment(inv: PartnerInvestment) {
+    setPendingDelete({ kind: 'partner_investment', inv });
+  }
+
+  async function confirmDelete() {
+    const p = pendingDelete;
+    setPendingDelete(null);
+    if (!p) return;
+
+    if (p.kind === 'transaction') {
+      const removed = p.tx;
+      setTransactions((list) => list.filter((t) => t.id !== removed.id));
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('transactions')
+        .update({ deleted_at: nowIso })
+        .eq('id', removed.id);
+      if (error) {
+        alert('Erro ao excluir: ' + error.message);
+        setTransactions((list) => [removed, ...list]);
+        return;
+      }
+      pushToast({
+        message: 'Movimentação excluída',
+        actionLabel: 'Desfazer',
+        onAction: async () => {
+          setTransactions((list) => {
+            if (list.some((t) => t.id === removed.id)) return list;
+            return [removed, ...list];
+          });
+          await supabase
+            .from('transactions')
+            .update({ deleted_at: null, deleted_by: null })
+            .eq('id', removed.id);
+        },
+      });
+    } else {
+      const removed = p.inv;
+      setPartnerInvestments((list) => list.filter((i) => i.id !== removed.id));
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('partner_investments')
+        .update({ deleted_at: nowIso })
+        .eq('id', removed.id);
+      if (error) {
+        alert('Erro ao excluir: ' + error.message);
+        setPartnerInvestments((list) => [removed, ...list]);
+        return;
+      }
+      pushToast({
+        message: 'Investimento excluído',
+        actionLabel: 'Desfazer',
+        onAction: async () => {
+          setPartnerInvestments((list) => {
+            if (list.some((i) => i.id === removed.id)) return list;
+            return [removed, ...list];
+          });
+          await supabase
+            .from('partner_investments')
+            .update({ deleted_at: null, deleted_by: null })
+            .eq('id', removed.id);
+        },
+      });
     }
   }
 
@@ -269,24 +380,39 @@ export default function App({ userEmail }: { userEmail: string }) {
     setPartnerForm(null);
   }
 
-  async function handleDeletePartnerInvestment(id: string) {
-    const prev = partnerInvestments;
-    setPartnerInvestments((p) => p.filter((i) => i.id !== id));
-    const { error } = await supabase.from('partner_investments').delete().eq('id', id);
-    if (error) {
-      alert('Erro ao excluir: ' + error.message);
-      setPartnerInvestments(prev);
-    }
-  }
-
   async function handleSignOut() {
     await fetch('/auth/signout', { method: 'POST' });
     window.location.href = '/login';
   }
 
+  const confirmText = (() => {
+    if (!pendingDelete) return { title: '', description: '', label: '' };
+    if (pendingDelete.kind === 'transaction') {
+      return {
+        title: 'Excluir movimentação?',
+        description: `"${pendingDelete.tx.description}" será removido. Você pode desfazer em seguida.`,
+        label: 'Excluir movimentação',
+      };
+    }
+    return {
+      title: 'Excluir investimento?',
+      description: `"${pendingDelete.inv.description}" será removido. Você pode desfazer em seguida.`,
+      label: 'Excluir investimento',
+    };
+  })();
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-[430px] min-h-screen bg-black relative overflow-hidden">
+        {!online && (
+          <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[50] w-full max-w-[430px] pt-safe pointer-events-none">
+            <div className="mx-4 mt-2 rounded-full bg-white/[0.08] backdrop-blur px-3 py-1.5 flex items-center justify-center gap-2">
+              <WifiOff size={13} className="text-white/70" />
+              <span className="text-[12px] text-white/70">Modo offline — dados em cache</span>
+            </div>
+          </div>
+        )}
+
         {tab === 'dashboard' && (
           <Dashboard
             transactions={transactions}
@@ -301,7 +427,7 @@ export default function App({ userEmail }: { userEmail: string }) {
         {tab === 'transactions' && (
           <Transactions
             transactions={transactions}
-            onDelete={handleDelete}
+            onDelete={(tx) => requestDeleteTransaction(tx)}
             onEdit={handleEditTransaction}
             onMenu={() => setMenuSheet(true)}
           />
@@ -311,7 +437,7 @@ export default function App({ userEmail }: { userEmail: string }) {
             investments={partnerInvestments}
             onAdd={(p) => setPartnerForm({ partner: p })}
             onEdit={(inv) => setPartnerForm({ partner: inv.partner, initial: inv })}
-            onDelete={handleDeletePartnerInvestment}
+            onDelete={(inv) => requestDeletePartnerInvestment(inv)}
             onMenu={() => setMenuSheet(true)}
           />
         )}
@@ -409,6 +535,17 @@ export default function App({ userEmail }: { userEmail: string }) {
             onSave={handleSavePartnerInvestment}
           />
         )}
+
+        <ConfirmSheet
+          open={!!pendingDelete}
+          title={confirmText.title}
+          description={confirmText.description}
+          confirmLabel={confirmText.label}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+
+        <Toast toast={toast} onDismiss={() => setToast(null)} />
       </div>
     </div>
   );
