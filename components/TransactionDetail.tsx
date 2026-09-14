@@ -1,15 +1,16 @@
 'use client';
 
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft, Trash2, Pencil, FileText } from 'lucide-react';
 import type { Transaction } from '@/lib/types';
 import { GOLD, GREEN, findCategory } from '@/lib/constants';
 import { fmtBRLBig, fmtDate } from '@/lib/format';
 
 export default function TransactionDetail({
-  tx, onClose, onDelete,
+  tx, onClose, onEdit, onDelete,
 }: {
   tx: Transaction;
   onClose: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const cat = findCategory(tx.category);
@@ -60,16 +61,45 @@ export default function TransactionDetail({
         {tx.receipt_url && (
           <div className="mt-6">
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold mb-3">
-              Recibo
+              Comprovante
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={tx.receipt_url} alt="Recibo" className="w-full rounded-2xl" />
+            {/\.pdf($|\?)/i.test(tx.receipt_url) ? (
+              <a
+                href={tx.receipt_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-white/[0.04] rounded-2xl px-4 py-4 active:bg-white/[0.06]"
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(201,165,95,0.15)' }}
+                >
+                  <FileText size={20} style={{ color: GOLD }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] text-white font-medium">Comprovante PDF</div>
+                  <div className="text-[12px] text-white/50">Toque para abrir</div>
+                </div>
+              </a>
+            ) : (
+              <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={tx.receipt_url} alt="Comprovante" className="w-full rounded-2xl" />
+              </a>
+            )}
           </div>
         )}
 
         <button
+          onClick={onEdit}
+          className="mt-8 w-full py-4 bg-white/[0.06] text-white rounded-2xl font-medium text-[15px] flex items-center justify-center gap-2 active:bg-white/[0.09]"
+        >
+          <Pencil size={16} />
+          Editar
+        </button>
+        <button
           onClick={onDelete}
-          className="mt-8 w-full py-4 bg-[#ff453a]/12 text-[#ff453a] rounded-2xl font-medium text-[15px] flex items-center justify-center gap-2 active:bg-[#ff453a]/18"
+          className="mt-3 w-full py-4 bg-[#ff453a]/12 text-[#ff453a] rounded-2xl font-medium text-[15px] flex items-center justify-center gap-2 active:bg-[#ff453a]/18"
         >
           <Trash2 size={16} />
           Excluir movimentação

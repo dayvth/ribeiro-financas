@@ -5,6 +5,7 @@ import type { Partner, NewPartnerInvestmentInput, PartnerInvestment } from '@/li
 import { GOLD } from '@/lib/constants';
 import { fmtBRL, todayISO } from '@/lib/format';
 import { PARTNERS } from '@/lib/types';
+import ReceiptField from './ReceiptField';
 
 export default function PartnerInvestmentForm({
   partner, initial, onCancel, onSave,
@@ -20,6 +21,7 @@ export default function PartnerInvestmentForm({
     initial?.amount ? fmtBRL(initial.amount) : '',
   );
   const [date, setDate] = useState(initial?.date ?? todayISO());
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(initial?.receipt_url ?? null);
   const [saving, setSaving] = useState(false);
 
   const partnerName = PARTNERS.find((p) => p.id === partner)?.name ?? partner;
@@ -42,6 +44,7 @@ export default function PartnerInvestmentForm({
         description: description.trim(),
         amount,
         date,
+        receipt_url: receiptUrl,
       });
     } finally {
       setSaving(false);
@@ -102,6 +105,8 @@ export default function PartnerInvestmentForm({
             />
           </FormRow>
         </div>
+
+        <ReceiptField value={receiptUrl} onChange={setReceiptUrl} />
       </div>
     </div>
   );

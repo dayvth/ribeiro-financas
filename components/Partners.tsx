@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil, Paperclip } from 'lucide-react';
 import type { Partner, PartnerInvestment } from '@/lib/types';
 import { PARTNERS } from '@/lib/types';
 import { GOLD, GOLD_SOFT, GOLD_DEEP } from '@/lib/constants';
@@ -165,8 +165,14 @@ function PartnerCard({
                   {fmtBRL(Number(inv.amount))}
                 </div>
                 <div className="text-[13px] text-white/60 truncate">{inv.description}</div>
-                <div className="text-[11px] text-white/35 mt-0.5 tabular-nums">
-                  {fmtDate(inv.date)}
+                <div className="text-[11px] text-white/35 mt-0.5 flex items-center gap-1.5">
+                  <span className="tabular-nums">{fmtDate(inv.date)}</span>
+                  {inv.receipt_url && (
+                    <>
+                      <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
+                      <Paperclip size={10} />
+                    </>
+                  )}
                 </div>
               </div>
               <button

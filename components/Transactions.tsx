@@ -11,10 +11,11 @@ import Monogram from './Monogram';
 import TransactionDetail from './TransactionDetail';
 
 export default function Transactions({
-  transactions, onDelete, onMenu,
+  transactions, onDelete, onEdit, onMenu,
 }: {
   transactions: Transaction[];
   onDelete: (id: string) => Promise<void> | void;
+  onEdit: (tx: Transaction) => void;
   onMenu: () => void;
 }) {
   const [detailTx, setDetailTx] = useState<Transaction | null>(null);
@@ -70,6 +71,11 @@ export default function Transactions({
         <TransactionDetail
           tx={detailTx}
           onClose={() => setDetailTx(null)}
+          onEdit={() => {
+            const tx = detailTx;
+            setDetailTx(null);
+            onEdit(tx);
+          }}
           onDelete={async () => {
             await onDelete(detailTx.id);
             setDetailTx(null);

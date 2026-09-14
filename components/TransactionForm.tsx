@@ -5,6 +5,7 @@ import { ChevronRight, X, Check, Plus, MoreHorizontal, type LucideIcon } from 'l
 import type { TransactionType, NewTransactionInput } from '@/lib/types';
 import { GOLD, CATEGORIES, type Category } from '@/lib/constants';
 import { fmtBRL, todayISO } from '@/lib/format';
+import ReceiptField from './ReceiptField';
 
 type Prefill = {
   description?: string;
@@ -29,6 +30,7 @@ export default function TransactionForm({
   );
   const [category, setCategory] = useState(prefill?.category || 'diesel');
   const [date, setDate] = useState(prefill?.date || todayISO());
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(prefill?.receipt ?? null);
   const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [newCatOpen, setNewCatOpen] = useState(false);
   const [customCats, setCustomCats] = useState<Category[]>([]);
@@ -61,7 +63,7 @@ export default function TransactionForm({
         amount,
         date,
         category: type === 'expense' ? category : null,
-        receipt_url: prefill?.receipt ?? null,
+        receipt_url: receiptUrl,
       });
     } finally {
       setSaving(false);
@@ -103,21 +105,6 @@ export default function TransactionForm({
           />
         </div>
 
-        {prefill?.receipt && (
-          <div className="mt-4 flex justify-center">
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={prefill.receipt} alt="Recibo" className="max-h-28 rounded-xl" />
-              <div
-                className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-                style={{ background: GOLD }}
-              >
-                <Check size={13} className="text-black" strokeWidth={3} />
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="mt-8 bg-white/[0.04] rounded-2xl overflow-hidden">
           <FormRow label="Descrição">
             <input
@@ -152,6 +139,8 @@ export default function TransactionForm({
             />
           </FormRow>
         </div>
+
+        <ReceiptField value={receiptUrl} onChange={setReceiptUrl} />
 
         {prefill && (
           <div className="mt-4 flex items-start gap-2.5 px-2">

@@ -20,6 +20,7 @@ import { Sheet, SheetOption } from './Sheet';
 
 type FormState = {
   type: TransactionType;
+  editingId?: string;
   prefill?: {
     description?: string;
     amount?: number;
@@ -143,6 +144,32 @@ export default function App({ userEmail }: { userEmail: string }) {
   }
 
   async function handleSave(tx: NewTransactionInput) {
+    const editingId = form?.editingId;
+    if (editingId) {
+      const prev = transactions;
+      setTransactions((list) =>
+        list.map((t) => (t.id === editingId ? { ...t, ...tx } as Transaction : t)),
+      );
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          type: tx.type,
+          description: tx.description,
+          amount: tx.amount,
+          date: tx.date,
+          category: tx.category,
+          receipt_url: tx.receipt_url,
+        })
+        .eq('id', editingId);
+      if (error) {
+        alert('Erro ao atualizar: ' + error.message);
+        setTransactions(prev);
+        return;
+      }
+      setForm(null);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('transactions')
       .insert({
@@ -170,6 +197,20 @@ export default function App({ userEmail }: { userEmail: string }) {
     setForm(null);
   }
 
+  function handleEditTransaction(tx: Transaction) {
+    setForm({
+      type: tx.type,
+      editingId: tx.id,
+      prefill: {
+        description: tx.description,
+        amount: Number(tx.amount),
+        category: tx.category ?? undefined,
+        date: tx.date,
+        receipt: tx.receipt_url ?? undefined,
+      },
+    });
+  }
+
   async function handleDelete(id: string) {
     const prev = transactions;
     setTransactions((p) => p.filter((t) => t.id !== id));
@@ -194,6 +235,7 @@ export default function App({ userEmail }: { userEmail: string }) {
           amount: input.amount,
           description: input.description,
           date: input.date,
+          receipt_url: input.receipt_url,
         })
         .eq('id', editingId);
       if (error) {
@@ -209,6 +251,7 @@ export default function App({ userEmail }: { userEmail: string }) {
           amount: input.amount,
           description: input.description,
           date: input.date,
+          receipt_url: input.receipt_url,
         })
         .select()
         .single();
@@ -259,6 +302,7 @@ export default function App({ userEmail }: { userEmail: string }) {
           <Transactions
             transactions={transactions}
             onDelete={handleDelete}
+            onEdit={handleEditTransaction}
             onMenu={() => setMenuSheet(true)}
           />
         )}

@@ -40,6 +40,7 @@ export type PartnerInvestment = {
   amount: number;
   description: string;
   date: string;
+  receipt_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -49,6 +50,7 @@ export type NewPartnerInvestmentInput = {
   amount: number;
   description: string;
   date: string;
+  receipt_url: string | null;
 };
 
 export const PARTNERS: { id: Partner; name: string }[] = [
