@@ -3,6 +3,7 @@ export type TransactionType = 'expense' | 'income' | 'investment';
 export type Transaction = {
   id: string;
   user_id: string | null;
+  partner: Partner | null;
   type: TransactionType;
   description: string;
   category: string | null;
@@ -58,7 +59,17 @@ export type NewPartnerInvestmentInput = {
   receipt_url: string | null;
 };
 
-export const PARTNERS: { id: Partner; name: string; photo: string }[] = [
-  { id: 'dayvth', name: 'Dayvth', photo: '/partners/dayvth.jpg' },
-  { id: 'dieinison', name: 'Dieinison', photo: '/partners/dieinison.jpg' },
+export const PARTNERS: { id: Partner; name: string; email: string; photo: string }[] = [
+  { id: 'dayvth', name: 'Dayvth', email: 'dayvtholiveira@gmail.com', photo: '/partners/dayvth.jpg' },
+  { id: 'dieinison', name: 'Dieinison', email: 'dieinison2015@gmail.com', photo: '/partners/dieinison.jpg' },
 ];
+
+export function emailToPartner(email: string | null | undefined): Partner | null {
+  const e = email?.toLowerCase() ?? '';
+  return PARTNERS.find((p) => p.email === e)?.id ?? null;
+}
+
+export function findPartner(id: Partner | null | undefined) {
+  if (!id) return null;
+  return PARTNERS.find((p) => p.id === id) ?? null;
+}

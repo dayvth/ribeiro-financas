@@ -5,6 +5,7 @@ import {
   Receipt, ArrowUpRight, ArrowDownRight, Building2, Camera, Search, X,
 } from 'lucide-react';
 import type { Transaction, TransactionType } from '@/lib/types';
+import { findPartner } from '@/lib/types';
 import { GOLD, GREEN, RED, findCategory } from '@/lib/constants';
 import { fmtBRLBig, fmtDate } from '@/lib/format';
 import Monogram from './Monogram';
@@ -189,6 +190,8 @@ function TransactionRow({
     (cat?.name ?? 'Despesa');
   const amountColor = tx.type === 'expense' ? RED : tx.type === 'income' ? GREEN : '#fff';
 
+  const partner = findPartner(tx.partner);
+
   return (
     <button
       onClick={onOpen}
@@ -196,8 +199,19 @@ function TransactionRow({
         !isFirst ? 'border-t border-white/[0.06]' : ''
       }`}
     >
-      <div className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center mr-3 shrink-0`}>
-        <Icon size={17} style={{ color }} />
+      <div className="relative mr-3 shrink-0">
+        <div className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center`}>
+          <Icon size={17} style={{ color }} />
+        </div>
+        {partner && (
+          <div
+            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full overflow-hidden ring-2 ring-black"
+            title={partner.name}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={partner.photo} alt={partner.name} className="w-full h-full object-cover" />
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[15px] text-white font-medium truncate leading-tight">
@@ -207,6 +221,12 @@ function TransactionRow({
           <span>{subtitle}</span>
           <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
           <span>{fmtDate(tx.date)}</span>
+          {partner && (
+            <>
+              <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
+              <span>{partner.name}</span>
+            </>
+          )}
           {tx.receipt_url && (
             <>
               <span className="w-0.5 h-0.5 rounded-full bg-white/30" />

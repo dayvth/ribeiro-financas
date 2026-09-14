@@ -2,6 +2,7 @@
 
 import { ChevronLeft, Trash2, Pencil, FileText } from 'lucide-react';
 import type { Transaction } from '@/lib/types';
+import { findPartner } from '@/lib/types';
 import { GOLD, GREEN, findCategory } from '@/lib/constants';
 import { fmtBRLBig, fmtDate } from '@/lib/format';
 
@@ -14,6 +15,7 @@ export default function TransactionDetail({
   onDelete: () => void;
 }) {
   const cat = findCategory(tx.category);
+  const partner = findPartner(tx.partner);
   const typeLabel =
     tx.type === 'income' ? 'Receita' :
     tx.type === 'expense' ? 'Despesa' :
@@ -52,7 +54,19 @@ export default function TransactionDetail({
           <div className="text-[13px] text-white/45 mt-3">{fmtDate(tx.date)}</div>
         </div>
 
-        <div className="mt-8 bg-white/[0.04] rounded-2xl overflow-hidden">
+        {partner && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-white/15">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={partner.photo} alt={partner.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="text-[13px] text-white/60">
+              Adicionado por <span className="text-white/85 font-medium">{partner.name}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 bg-white/[0.04] rounded-2xl overflow-hidden">
           <DetailRow label="Descrição" value={tx.description} />
           {cat && <DetailRow label="Categoria" value={cat.name} />}
           <DetailRow label="Data" value={fmtDate(tx.date)} last />

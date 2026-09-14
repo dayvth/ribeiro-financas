@@ -9,6 +9,7 @@ import type {
   Transaction, Period, CustomRange, TransactionType, NewTransactionInput, AnalyzedReceipt,
   PartnerInvestment, NewPartnerInvestmentInput, Partner,
 } from '@/lib/types';
+import { emailToPartner } from '@/lib/types';
 import { GOLD } from '@/lib/constants';
 import { useOnline } from '@/lib/useOnline';
 import Dashboard from './Dashboard';
@@ -461,7 +462,13 @@ export default function App({ userEmail }: { userEmail: string }) {
             iconEl={<Building2 size={22} />}
             iconBg="bg-[#c9a55f]/15" iconColor="text-[#c9a55f]"
             label="Novo investimento"
-            onClick={() => { setAddSheet(false); setForm({ type: 'investment' }); }}
+            sublabel="Registra como investimento pessoal seu"
+            onClick={() => {
+              setAddSheet(false);
+              const p = emailToPartner(userEmail);
+              if (p) setPartnerForm({ partner: p });
+              else alert('Não foi possível identificar seu sócio. Reentra no app.');
+            }}
           />
         </Sheet>
 

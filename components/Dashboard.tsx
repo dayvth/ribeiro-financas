@@ -34,8 +34,7 @@ export default function Dashboard({
       filtered.filter((t) => t.type === type).reduce((s, t) => s + Number(t.amount), 0);
     const income = sum('income');
     const expense = sum('expense');
-    const investment = sum('investment');
-    return { income, expense, result: income - expense, investment };
+    return { income, expense, result: income - expense };
   }, [filtered]);
 
   const partnerTotals = useMemo(() => {
@@ -120,72 +119,47 @@ export default function Dashboard({
         <StatCard label="Despesas" value={totals.expense} color={RED} />
       </div>
 
-      {/* Investimento */}
+      {/* Investimento dos sócios (unificado) */}
       <div className="mt-3 px-6">
-        <div className="bg-white/[0.04] rounded-2xl p-5">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center"
-              style={{ background: 'rgba(201,165,95,0.15)' }}
-            >
-              <Building2 size={14} style={{ color: GOLD }} />
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-              Investimento total
-            </div>
-          </div>
-          <div className="mt-3 text-[30px] font-semibold tracking-tight tabular-nums text-white leading-none">
-            {fmtBRLBig(totals.investment)}
-          </div>
-          <div className="text-[12px] text-white/40 mt-2">
-            Não entra no cálculo de resultado
-          </div>
-        </div>
-      </div>
-
-      {/* Investimento dos sócios */}
-      {partnerTotals.total > 0 && (
-        <div className="mt-3 px-6">
-          <button
-            onClick={onGoPartners}
-            className="w-full bg-white/[0.04] rounded-2xl p-5 flex items-center active:bg-white/[0.06] transition text-left"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-6 h-6 rounded-md flex items-center justify-center"
-                  style={{ background: 'rgba(201,165,95,0.15)' }}
-                >
-                  <Users size={14} style={{ color: GOLD }} />
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
-                  Investimento dos sócios
-                </div>
+        <button
+          onClick={onGoPartners}
+          className="w-full bg-white/[0.04] rounded-2xl p-5 flex items-center active:bg-white/[0.06] transition text-left"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center"
+                style={{ background: 'rgba(201,165,95,0.15)' }}
+              >
+                <Building2 size={14} style={{ color: GOLD }} />
               </div>
-              <div className="mt-3 text-[22px] font-semibold tracking-tight tabular-nums text-white leading-none">
-                {fmtBRLBig(partnerTotals.total)}
+              <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-semibold">
+                Investimento total
               </div>
-              <div className="mt-3 flex items-center gap-2.5">
-                {PARTNERS.map((p) => {
-                  const value = p.id === 'dayvth' ? partnerTotals.dayvth : partnerTotals.dieinison;
-                  return (
-                    <div key={p.id} className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-white/10 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
-                      </div>
-                      <span className="text-[12px] text-white/85 tabular-nums">
-                        {pctLabel(value, partnerTotals.total)}
-                      </span>
+            </div>
+            <div className="mt-3 text-[30px] font-semibold tracking-tight tabular-nums text-white leading-none">
+              {fmtBRLBig(partnerTotals.total)}
+            </div>
+            <div className="mt-3 flex items-center gap-2.5">
+              {PARTNERS.map((p) => {
+                const value = p.id === 'dayvth' ? partnerTotals.dayvth : partnerTotals.dieinison;
+                return (
+                  <div key={p.id} className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-white/10 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
                     </div>
+                    <span className="text-[12px] text-white/85 tabular-nums">
+                      {pctLabel(value, partnerTotals.total)}
+                    </span>
+                  </div>
                   );
                 })}
               </div>
             </div>
-            <ChevronRight size={18} className="text-white/30 ml-3 shrink-0" />
-          </button>
-        </div>
-      )}
+          <ChevronRight size={18} className="text-white/30 ml-3 shrink-0" />
+        </button>
+      </div>
 
       {/* Despesas por categoria */}
       {byCategory.length > 0 && (
