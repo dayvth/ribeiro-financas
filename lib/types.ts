@@ -10,6 +10,7 @@ export type Transaction = {
   amount: number;
   date: string; // YYYY-MM-DD
   receipt_url: string | null;
+  receipt_urls: string[] | null;
   deleted_at: string | null;
   deleted_by: string | null;
   created_at: string;
@@ -25,7 +26,7 @@ export type NewTransactionInput = {
   amount: number;
   date: string;
   category: string | null;
-  receipt_url: string | null;
+  receipt_urls: string[];
 };
 
 export type AnalyzedReceipt = {
@@ -44,6 +45,7 @@ export type PartnerInvestment = {
   description: string;
   date: string;
   receipt_url: string | null;
+  receipt_urls: string[] | null;
   user_id: string | null;
   deleted_at: string | null;
   deleted_by: string | null;
@@ -56,7 +58,7 @@ export type NewPartnerInvestmentInput = {
   amount: number;
   description: string;
   date: string;
-  receipt_url: string | null;
+  receipt_urls: string[];
 };
 
 export const PARTNERS: { id: Partner; name: string; email: string; photo: string }[] = [

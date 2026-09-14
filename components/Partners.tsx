@@ -287,7 +287,7 @@ function PartnerHistoryCard({
                 <div className="text-[13px] text-white/60 truncate">{inv.description}</div>
                 <div className="text-[11px] text-white/35 mt-0.5 flex items-center gap-1.5">
                   <span className="tabular-nums">{fmtDate(inv.date)}</span>
-                  {inv.receipt_url && (
+                  {(inv.receipt_urls?.length || inv.receipt_url) && (
                     <>
                       <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
                       <Paperclip size={10} />

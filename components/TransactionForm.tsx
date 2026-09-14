@@ -12,7 +12,7 @@ type Prefill = {
   amount?: number;
   category?: string;
   date?: string;
-  receipt?: string;
+  receipts?: string[];
 };
 
 export default function TransactionForm({
@@ -30,7 +30,7 @@ export default function TransactionForm({
   );
   const [category, setCategory] = useState(prefill?.category || 'diesel');
   const [date, setDate] = useState(prefill?.date || todayISO());
-  const [receiptUrl, setReceiptUrl] = useState<string | null>(prefill?.receipt ?? null);
+  const [receiptUrls, setReceiptUrls] = useState<string[]>(prefill?.receipts ?? []);
   const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [newCatOpen, setNewCatOpen] = useState(false);
   const [customCats, setCustomCats] = useState<Category[]>([]);
@@ -63,7 +63,7 @@ export default function TransactionForm({
         amount,
         date,
         category: type === 'expense' ? category : null,
-        receipt_url: receiptUrl,
+        receipt_urls: receiptUrls,
       });
     } finally {
       setSaving(false);
@@ -140,7 +140,7 @@ export default function TransactionForm({
           </FormRow>
         </div>
 
-        <ReceiptField value={receiptUrl} onChange={setReceiptUrl} />
+        <ReceiptField value={receiptUrls} onChange={setReceiptUrls} />
 
         {prefill && (
           <div className="mt-4 flex items-start gap-2.5 px-2">

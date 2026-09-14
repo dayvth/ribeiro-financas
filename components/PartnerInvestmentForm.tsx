@@ -21,7 +21,9 @@ export default function PartnerInvestmentForm({
     initial?.amount ? fmtBRL(initial.amount) : '',
   );
   const [date, setDate] = useState(initial?.date ?? todayISO());
-  const [receiptUrl, setReceiptUrl] = useState<string | null>(initial?.receipt_url ?? null);
+  const [receiptUrls, setReceiptUrls] = useState<string[]>(
+    initial?.receipt_urls ?? (initial?.receipt_url ? [initial.receipt_url] : []),
+  );
   const [saving, setSaving] = useState(false);
 
   const partnerName = PARTNERS.find((p) => p.id === partner)?.name ?? partner;
@@ -44,7 +46,7 @@ export default function PartnerInvestmentForm({
         description: description.trim(),
         amount,
         date,
-        receipt_url: receiptUrl,
+        receipt_urls: receiptUrls,
       });
     } finally {
       setSaving(false);
@@ -106,7 +108,7 @@ export default function PartnerInvestmentForm({
           </FormRow>
         </div>
 
-        <ReceiptField value={receiptUrl} onChange={setReceiptUrl} />
+        <ReceiptField value={receiptUrls} onChange={setReceiptUrls} />
       </div>
     </div>
   );

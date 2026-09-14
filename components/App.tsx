@@ -30,7 +30,7 @@ type FormState = {
     amount?: number;
     category?: string;
     date?: string;
-    receipt?: string;
+    receipts?: string[];
   };
 } | null;
 
@@ -185,7 +185,7 @@ export default function App({ userEmail }: { userEmail: string }) {
           category: analyzed.category ?? 'diesel',
           amount: analyzed.amount ?? 0,
           date: analyzed.date ?? new Date().toISOString().slice(0, 10),
-          receipt: receiptUrl,
+          receipts: [receiptUrl],
         },
       });
     } catch (err: any) {
@@ -210,7 +210,8 @@ export default function App({ userEmail }: { userEmail: string }) {
           amount: tx.amount,
           date: tx.date,
           category: tx.category,
-          receipt_url: tx.receipt_url,
+          receipt_url: tx.receipt_urls[0] ?? null,
+          receipt_urls: tx.receipt_urls,
         })
         .eq('id', editingId);
       if (error) {
@@ -230,7 +231,8 @@ export default function App({ userEmail }: { userEmail: string }) {
         amount: tx.amount,
         date: tx.date,
         category: tx.category,
-        receipt_url: tx.receipt_url,
+        receipt_url: tx.receipt_urls[0] ?? null,
+        receipt_urls: tx.receipt_urls,
       })
       .select()
       .single();
@@ -250,6 +252,12 @@ export default function App({ userEmail }: { userEmail: string }) {
   }
 
   function handleEditTransaction(tx: Transaction) {
+    const receipts =
+      tx.receipt_urls && tx.receipt_urls.length > 0
+        ? tx.receipt_urls
+        : tx.receipt_url
+        ? [tx.receipt_url]
+        : [];
     setForm({
       type: tx.type,
       editingId: tx.id,
@@ -258,7 +266,7 @@ export default function App({ userEmail }: { userEmail: string }) {
         amount: Number(tx.amount),
         category: tx.category ?? undefined,
         date: tx.date,
-        receipt: tx.receipt_url ?? undefined,
+        receipts,
       },
     });
   }
@@ -347,7 +355,8 @@ export default function App({ userEmail }: { userEmail: string }) {
           amount: input.amount,
           description: input.description,
           date: input.date,
-          receipt_url: input.receipt_url,
+          receipt_url: input.receipt_urls[0] ?? null,
+          receipt_urls: input.receipt_urls,
         })
         .eq('id', editingId);
       if (error) {
@@ -363,7 +372,8 @@ export default function App({ userEmail }: { userEmail: string }) {
           amount: input.amount,
           description: input.description,
           date: input.date,
-          receipt_url: input.receipt_url,
+          receipt_url: input.receipt_urls[0] ?? null,
+          receipt_urls: input.receipt_urls,
         })
         .select()
         .single();
@@ -428,8 +438,11 @@ export default function App({ userEmail }: { userEmail: string }) {
         {tab === 'transactions' && (
           <Transactions
             transactions={transactions}
+            partnerInvestments={partnerInvestments}
             onDelete={(tx) => requestDeleteTransaction(tx)}
             onEdit={handleEditTransaction}
+            onDeletePartnerInvestment={(inv) => requestDeletePartnerInvestment(inv)}
+            onEditPartnerInvestment={(inv) => setPartnerForm({ partner: inv.partner, initial: inv })}
             onMenu={() => setMenuSheet(true)}
           />
         )}
